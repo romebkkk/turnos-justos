@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Turnos Justos · Cuadrante de turnos automático y equilibrado</title>
+<meta name="description" content="Genera gratis un cuadrante de turnos repartido de forma justa: respeta días libres, descanso tras el turno de noche y equilibra las horas de cada persona.">
+<link rel="stylesheet" href="style.css"><style>:root{--accent:#4ade80}</style></head><body><div class="wrap">
+<header><div class="logo">🗓️ Turnos <b>Justos</b></div><p>Se acabaron las discusiones por los turnos: el cuadrante se reparte solo, de forma equilibrada.</p>
+<span class="tag">Bares, comercios, residencias, equipos · gratis</span></header>
+<div class="card noprint"><label>Personas (marca los días que NO pueden trabajar)</label><div id="ps"></div><button class="btn sec" id="add">+ Añadir persona</button>
+ <div class="g3"><div><label>Turnos (separados por coma)</label><input id="tu" value="Mañana, Tarde, Noche"></div><div><label>Personas por turno</label><input id="pt" type="number" value="1" min="1"></div><div><label>Máx. turnos por persona en la semana (0 = sin límite)</label><input id="mx" type="number" value="0" min="0"></div></div>
+ <label class="chk"><input type="checkbox" id="dn" checked>Nadie entra de mañana justo después de hacer noche</label>
+ <button class="btn" id="gen">Generar cuadrante</button></div>
+<div id="res"></div>
+<footer>Código abierto · <a href="https://github.com/romebkkk/turnos-justos" target="_blank">GitHub</a> · Hecho con ❤️ por <a href="https://dataflowelegance.es" target="_blank">DataFlow Elegance</a></footer></div>
+<script src="turnos.js"></script><script>
+var $=function(s){return document.querySelector(s)},DIAS=["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+function esc(s){return String(s||"").replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+function persona(n){var r=document.createElement("div");r.className="card";r.style.padding="10px";r.innerHTML='<div class="row"><input placeholder="Nombre" value="'+(n||"")+'"><button class="x">✕</button></div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">'+DIAS.map(function(d,i){return'<label class="chk" style="margin:0"><input type="checkbox" value="'+i+'">'+d+'</label>'}).join("")+'</div>';r.querySelector(".x").onclick=function(){r.remove()};$("#ps").appendChild(r)}
+["Ana","Bea","Carlos","Dani"].forEach(persona);$("#add").onclick=function(){persona("")};
+$("#gen").onclick=function(){
+ var personas=[].map.call($("#ps").children,function(c){return{nombre:c.querySelector("input").value.trim(),noDisponible:[].map.call(c.querySelectorAll("input[type=checkbox]:checked"),function(x){return+x.value})}});
+ var turnos=$("#tu").value.split(",").map(function(s){return s.trim()}).filter(Boolean);
+ var r=TurnosJustos.generar({personas:personas,dias:7,turnos:turnos,porTurno:$("#pt").value,descansoTrasNoche:$("#dn").checked,maxPorPersona:$("#mx").value});
+ if(r.error){$("#res").innerHTML='<p class="bad">'+r.error+'</p>';return}
+ var h='<tr><th>Turno</th>'+DIAS.map(function(d){return'<th>'+d+'</th>'}).join("")+'</tr>'+turnos.map(function(t){return'<tr><th>'+esc(t)+'</th>'+r.cuadrante.map(function(f){return'<td>'+f[t].map(esc).join("<br>")+'</td>'}).join("")+'</tr>'}).join("");
+ var c=Object.keys(r.turnos_por_persona).map(function(k){return esc(k)+': <b>'+r.turnos_por_persona[k]+'</b>'}).join(" · ");
+ $("#res").innerHTML='<div class="paper"><h2 style="margin-top:0">Cuadrante semanal</h2><table>'+h+'</table><p>Turnos por persona: '+c+'</p>'+(r.huecos_sin_cubrir?'<p style="color:#b91c1c">⚠️ '+r.huecos_sin_cubrir+' turnos sin cubrir: añade personas o revisa los días libres.</p>':'<p style="color:#15803d">✅ Todos los turnos cubiertos. Diferencia máxima entre personas: '+r.diferencia_max_min+'.</p>')+'</div><button class="btn sec noprint" onclick="window.print()">🖨️ Imprimir</button>'};
+</script></body></html>
